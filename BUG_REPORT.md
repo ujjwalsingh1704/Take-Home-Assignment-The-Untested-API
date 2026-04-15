@@ -1,47 +1,125 @@
-### Bug: Incorrect pagination offset calculation
+# 🐛 Bug Report — Task Manager API
 
-Expected Behavior:
-When requesting page 1 with a given limit (e.g., page=1, limit=10), the API should return the first 10 tasks.
+---
 
-Actual Behavior:
-The API skips the first set of tasks and starts from a later index.
+## 1. Incorrect Pagination Offset Calculation (Fixed)
 
-How Found:
-By reviewing the getPaginated function logic:
-offset is calculated as (page * limit) instead of (page - 1) * limit.
+**Expected Behavior**
+For `page = 1` and `limit = N`, the API should return the first `N` tasks.
 
-Suggested Fix:
-Change the offset calculation from:
+**Actual Behavior**
+The API skips the first set of tasks and returns incorrect results.
+
+**Root Cause**
+Offset is calculated incorrectly:
+
+```js
 const offset = page * limit;
+```
 
-To:
+**Fix Applied**
+
+```js
 const offset = (page - 1) * limit;
+```
 
-### Bug: Completing a task resets priority to medium
+**Impact**
+Incorrect data returned to clients, especially on the first page.
 
-Expected Behavior:
-When marking a task as completed, the task's priority should remain unchanged.
+---
 
-Actual Behavior:
-The priority is always reset to "medium" regardless of its original value.
+## 2. Task Completion Resets Priority
 
-How Found:
-While reviewing the completeTask function logic during testing.
+**Expected Behavior**
+Completing a task should not modify its priority.
 
-Suggested Fix:
-Remove the line that sets priority to "medium" in completeTask.
+**Actual Behavior**
+Task priority is forcibly set to `"medium"` when marked as completed.
 
+**Root Cause**
 
-### Bug: Task can be created without title
+```js
+priority: 'medium'
+```
 
-Expected Behavior:
-Task creation should fail or throw an error when title is missing.
+**Suggested Fix**
+Remove the forced priority assignment and preserve the original value.
 
-Actual Behavior:
-Task is created successfully with title as undefined.
+**Impact**
+Unintended data mutation leading to loss of original priority information.
 
-How Found:
-By testing create function with empty input in unit tests.
+---
 
-Suggested Fix:
-Add validation to ensure title is required before creating a task.
+## 3. Missing Validation for Task Title
+
+**Expected Behavior**
+Task creation should fail if the `title` field is missing or empty.
+
+**Actual Behavior**
+Tasks are created successfully even when `title` is `undefined`.
+
+**Root Cause**
+No validation check for required fields during task creation.
+
+**Suggested Fix**
+Add validation to ensure `title` is required before creating a task.
+
+**Impact**
+Invalid or incomplete data can be stored, affecting data quality.
+
+---
+
+## 4. Inaccurate Status Filtering Logic
+
+**Expected Behavior**
+Filtering by status should return only exact matches (e.g., `"todo"` returns only `"todo"` tasks).
+
+**Actual Behavior**
+Filtering uses partial matching via `.includes()`, which may return unintended results.
+
+**Root Cause**
+
+```js
+t.status.includes(status)
+```
+
+**Suggested Fix**
+
+```js
+t.status === status
+```
+
+**Impact**
+Incorrect filtering results, especially if similar status values are introduced.
+
+---
+
+# 📊 Summary
+
+| Category        | Count |
+| --------------- | ----- |
+| Bugs Identified | 4     |
+| Bugs Fixed      | 1     |
+| Remaining       | 3     |
+
+---
+
+# 🧠 Approach
+
+Bugs were identified through:
+
+* Unit testing (service layer)
+* Integration testing (API endpoints)
+* Code inspection and edge case analysis
+
+---
+
+# 🏁 Conclusion
+
+The system is functional but requires improvements in:
+
+* Input validation
+* Data integrity
+* Logical correctness
+
+---

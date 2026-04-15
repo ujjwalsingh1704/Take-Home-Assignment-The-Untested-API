@@ -3,28 +3,34 @@ const router = express.Router();
 const taskService = require('../services/taskService');
 const { validateCreateTask, validateUpdateTask } = require('../utils/validators');
 
+
+// 📊 Get stats
 router.get('/stats', (req, res) => {
   const stats = taskService.getStats();
   res.json(stats);
 });
 
 
+// 🚀 Assign task (FIXED & CLEAN)
 router.patch("/:id/assign", (req, res) => {
   const { assignee } = req.body;
 
-  if (!assignee) {
-  return res.status(400).json({ error: "Assignee is required" });
-}
+  // ✅ Validation
+  if (!assignee || assignee.trim() === "") {
+    return res.status(400).json({ error: "Assignee is required" });
+  }
 
   const task = taskService.assignTask(req.params.id, assignee);
 
   if (!task) {
-    return res.status(404).send();
+    return res.status(404).json({ error: "Task not found" });
   }
 
   res.json(task);
 });
 
+
+// 📋 Get tasks (filter + pagination)
 router.get('/', (req, res) => {
   const { status, page, limit } = req.query;
 
@@ -44,6 +50,8 @@ router.get('/', (req, res) => {
   res.json(tasks);
 });
 
+
+// ➕ Create task
 router.post('/', (req, res) => {
   const error = validateCreateTask(req.body);
   if (error) {
@@ -54,6 +62,8 @@ router.post('/', (req, res) => {
   res.status(201).json(task);
 });
 
+
+// ✏️ Update task
 router.put('/:id', (req, res) => {
   const error = validateUpdateTask(req.body);
   if (error) {
@@ -61,6 +71,7 @@ router.put('/:id', (req, res) => {
   }
 
   const task = taskService.update(req.params.id, req.body);
+
   if (!task) {
     return res.status(404).json({ error: 'Task not found' });
   }
@@ -68,8 +79,11 @@ router.put('/:id', (req, res) => {
   res.json(task);
 });
 
+
+// ❌ Delete task
 router.delete('/:id', (req, res) => {
   const deleted = taskService.remove(req.params.id);
+
   if (!deleted) {
     return res.status(404).json({ error: 'Task not found' });
   }
@@ -77,13 +91,17 @@ router.delete('/:id', (req, res) => {
   res.status(204).send();
 });
 
+
+// ✅ Complete task
 router.patch('/:id/complete', (req, res) => {
   const task = taskService.completeTask(req.params.id);
+
   if (!task) {
     return res.status(404).json({ error: 'Task not found' });
   }
 
   res.json(task);
 });
+
 
 module.exports = router;
